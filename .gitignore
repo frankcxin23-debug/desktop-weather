@@ -1,0 +1,12 @@
+# 系统
+.DS_Store
+
+# 构建产物
+build/
+macos/.build/
+windows/bin/
+windows/obj/
+windows/publish/
+
+# WebView2 运行时数据
+.webview2data/

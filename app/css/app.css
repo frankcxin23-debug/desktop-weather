@@ -1,0 +1,116 @@
+/* 设置窗口：深色、克制、内容优先 */
+:root {
+  --bg: #161618;
+  --card: #232326;
+  --card-hover: #2b2b2f;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f2f2f4;
+  --text-2: rgba(235, 235, 240, 0.62);
+  --text-3: rgba(235, 235, 240, 0.38);
+  --accent: #0a84ff;
+  --accent-soft: rgba(10, 132, 255, 0.16);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: linear-gradient(180deg, #1b1b1e 0%, var(--bg) 100%);
+  color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+.win { padding: 26px 28px 20px; display: flex; flex-direction: column; height: 100%; }
+
+header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; }
+header .sub { margin-top: 4px; font-size: 12px; color: var(--text-3); }
+
+section { margin-top: 22px; }
+.label {
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+}
+
+/* 分段控件 */
+.seg {
+  display: flex; background: rgba(255,255,255,0.06);
+  border-radius: 9px; padding: 3px; gap: 3px;
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; color: var(--text-2);
+  font-size: 13px; padding: 7px 0; border-radius: 7px; cursor: pointer;
+  transition: all .18s ease; font-family: inherit;
+}
+.seg button.on {
+  background: rgba(255,255,255,0.14); color: var(--text); font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* 搜索 */
+.manual { margin-top: 12px; }
+.search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 9px 12px; color: var(--text-3);
+  transition: border-color .15s ease;
+}
+.search:focus-within { border-color: rgba(10,132,255,0.55); }
+.search input {
+  flex: 1; border: 0; outline: 0; background: transparent;
+  color: var(--text); font-size: 13px; font-family: inherit;
+}
+.search input::placeholder { color: var(--text-3); }
+.spin {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--accent);
+  animation: rot .7s linear infinite;
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* 搜索结果 */
+.results { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border-radius: 9px; cursor: pointer;
+  transition: background .12s ease; border: 1px solid transparent;
+}
+.row:hover { background: var(--card-hover); }
+.row.sel { background: var(--accent-soft); border-color: rgba(10,132,255,0.35); }
+.row .name { font-size: 13px; font-weight: 500; }
+.row .geo { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.row .check { color: var(--accent); font-size: 13px; font-weight: 600; }
+.empty { padding: 14px 12px; color: var(--text-3); font-size: 12px; text-align: center; }
+
+/* 热门城市 */
+.chips-title { margin: 14px 0 8px; font-size: 11px; color: var(--text-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  padding: 6px 13px; border-radius: 999px; font-size: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  color: var(--text-2); cursor: pointer; transition: all .15s ease;
+}
+.chip:hover { background: var(--card-hover); color: var(--text); }
+.chip.sel { background: var(--accent-soft); border-color: rgba(10,132,255,0.4); color: #7cb8ff; }
+
+/* 状态行 */
+.status { margin-top: 12px; font-size: 12px; color: var(--text-2); min-height: 16px; }
+.status b { color: var(--text); font-weight: 500; }
+
+hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
+
+/* 强度滑块 */
+.slider-row { display: flex; align-items: center; gap: 10px; }
+.slider-row .end { font-size: 11px; color: var(--text-3); }
+.slider-row input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none; height: 4px;
+  border-radius: 2px; background: rgba(255,255,255,0.14); outline: none;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,0.45); cursor: pointer;
+}
+.pct { width: 46px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+footer { margin-top: auto; padding-top: 18px; font-size: 11px; color: var(--text-3); }
+.hidden { display: none !important; }

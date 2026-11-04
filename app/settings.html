@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>桌面天气设置</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="win">
+  <header>
+    <h1>桌面天气</h1>
+    <p class="sub">把一座城市的天气，变成你桌面的氛围</p>
+  </header>
+
+  <section>
+    <div class="label">城市</div>
+    <div class="seg" id="seg">
+      <button type="button" data-mode="auto" class="on">自动定位</button>
+      <button type="button" data-mode="manual">手动选择城市</button>
+    </div>
+
+    <div id="manualArea" class="manual hidden">
+      <div class="search">
+        <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5 L14.5 14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="q" type="text" placeholder="输入城市名，如：上海 / Tokyo" autocomplete="off" spellcheck="false">
+        <div id="spin" class="spin hidden"></div>
+      </div>
+      <div id="results" class="results"></div>
+      <div class="chips-title">热门城市</div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div id="cityStatus" class="status"></div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="label">特效强度</div>
+    <div class="slider-row">
+      <span class="end">淡</span>
+      <input type="range" id="intensity" min="20" max="180" step="5" value="100">
+      <span class="end">浓</span>
+      <span id="pct" class="pct">100%</span>
+    </div>
+  </section>
+
+  <footer>更改即时生效并自动保存 · 菜单栏 / 托盘图标可刷新或重新定位</footer>
+</div>
+<script src="js/bridge.js"></script>
+<script src="js/settings-ui.js"></script>
+</body>
+</html>
