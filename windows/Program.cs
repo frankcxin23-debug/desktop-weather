@@ -79,7 +79,7 @@ public sealed class AppContext : ApplicationContext
         catch { /* 回退：保持普通窗口 */ }
     }
 
-    private static string AppDir => AppContext.BaseDirectory;
+    private static string AppDir => System.AppContext.BaseDirectory;
     private static string PageUri(string page) =>
         new Uri(Path.Combine(AppDir, "app", page)).AbsoluteUri;
 
