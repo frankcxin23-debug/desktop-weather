@@ -7,31 +7,31 @@ on:
 
 jobs:
   macos:
-    name: macOS 编译
+    name: macOS Build
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Swift 编译
+      - name: Swift Build
         working-directory: macos
         run: swift build -c release
-      - name: 打包 .app 并上传产物
+      - name: Package .app and upload artifact
         run: |
           ./build.sh
-          cd build && zip -qr 桌面天气-macOS.zip 桌面天气.app
+          cd build && zip -qr DesktopWeather-macOS.zip 桌面天气.app
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-weather-macos
-          path: build/桌面天气-macOS.zip
+          path: build/DesktopWeather-macOS.zip
 
   windows:
-    name: Windows 编译
+    name: Windows Build
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: .NET 编译
+      - name: .NET Build
         working-directory: windows
         run: dotnet build -c Release
-      - name: 发布并打包产物
+      - name: Publish and package artifact
         run: |
           powershell -ExecutionPolicy Bypass -File windows/build.ps1
           Compress-Archive -Path windows/publish/* -DestinationPath windows/desktop-weather-windows.zip

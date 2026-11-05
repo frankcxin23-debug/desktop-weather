@@ -1,84 +1,84 @@
-# 桌面天气 Desktop Weather
+# Desktop Weather
 
-把当地天气变成电脑桌面的"氛围"。不是在桌面上贴一个天气小组件，而是让整个桌面随天气流动变化——雨天整体转阴暗冷调、雨丝斜落、水珠沿屏幕滑落；雪天漫天飘雪；晴天泛暖金光晕、夜晚是闪烁星空。
+Turn your local weather into your desktop's *mood*. Not a widget pinned on the wallpaper — the entire desktop comes alive and flows with the weather: rainy days shift the whole screen into a dark, cold palette with slanted rain streaks and droplets sliding down the glass; snow days bring drifting snowfall; sunny days glow with warm golden light, and clear nights fill the sky with twinkling stars.
 
-铺满桌面但完全不挡鼠标和窗口（壁纸之上、所有窗口之下）。
+It covers the full screen yet never blocks your mouse or windows (above the wallpaper, below everything else).
 
-## 效果一览
+## Effects
 
-| 天气 | 桌面效果 |
-|------|----------|
-| 晴天（白天） | 暖金色太阳辉光 + 缓缓上浮的光尘 |
-| 晴夜 | 深蓝夜空 + 冷暖双色闪烁星空 + 月光晕 |
-| 多云 | 半透明流云缓缓漂移 |
-| 阴天 | 厚重灰云层铺满 |
-| 雾 | 乳白雾带弥漫流动 |
-| 小雨 | 冷灰色调 + 细雨丝 + 偶尔玻璃水珠 |
-| 大雨 | 钢青深蓝调 + 三层景深雨 + 水珠滑落 |
-| 雷雨 | 深墨色调 + 密集雨 + 随机闪电 |
-| 雪天 | 冷蓝紫调 + 双层景深飘雪 |
+| Weather | Desktop Effect |
+|---------|----------------|
+| Clear (day) | Warm golden sun glow + slowly rising light dust |
+| Clear night | Deep blue sky + dual-tone twinkling stars + moon glow |
+| Partly cloudy | Translucent clouds drifting slowly |
+| Overcast | Heavy gray cloud layers |
+| Fog | Milky fog banks rolling through |
+| Light rain | Cold gray tone + fine rain streaks + occasional glass droplets |
+| Heavy rain | Steel-blue tone + 3-layer depth rain + droplets sliding down |
+| Thunderstorm | Ink-dark tone + dense rain + random lightning |
+| Snow | Cold blue-violet tone + 2-layer depth snowfall |
 
-调色均为昼/夜两套精细渐变（共 14 套），天气切换时色调交叉淡入淡出。
+Each weather condition ships with finely tuned day/night gradient palettes (14 in total), cross-fading smoothly when conditions change.
 
-## 功能
+## Features
 
-- **自动定位**：macOS 走系统定位（CoreLocation，需授权），失败自动回退 IP 定位；Windows 走 IP 定位
-- **手动选城市**：即搜即得（支持中文/英文）+ 12 个热门城市一键切换
-- **特效强度**：20% ~ 180% 滑块，实时生效，自动保存
-- 每 30 分钟自动刷新天气，系统唤醒后立即刷新
+- **Auto location**: system location on macOS (CoreLocation, with permission prompt), IP-based fallback; IP-based location on Windows
+- **Manual city picker**: instant search-as-you-type (Chinese/English) + 12 popular cities one click away
+- **Intensity slider**: 20% – 180%, applies in real time, auto-saved
+- Weather auto-refreshes every 30 minutes, and instantly on system wake
 
-## 试一试（无需构建）
+## Try It (No Build Required)
 
-特效核心是纯 HTML/Canvas，浏览器直接打开即可预览：
+The effects engine is plain HTML/Canvas — open it directly in a browser:
 
 ```
-app/index.html?demo=rain-night    # 指定某种天气
-app/index.html?demo=auto          # 每 8 秒轮播全部天气
+app/index.html?demo=rain-night    # a specific condition
+app/index.html?demo=auto          # cycle through all conditions every 8s
 ```
 
-支持：`clear-day` `clear-night` `partly-day` `partly-night` `overcast-day` `overcast-night` `fog` `drizzle-day` `drizzle-night` `rain-day` `rain-night` `thunder-day` `thunder-night` `snow-day` `snow-night`
+Supported: `clear-day` `clear-night` `partly-day` `partly-night` `overcast-day` `overcast-night` `fog` `drizzle-day` `drizzle-night` `rain-day` `rain-night` `thunder-day` `thunder-night` `snow-day` `snow-night`
 
-## 构建
+## Build
 
-### macOS（需要 Xcode Command Line Tools）
+### macOS (requires Xcode Command Line Tools)
 
 ```bash
 ./build.sh
 open build/桌面天气.app
 ```
 
-首次运行会弹出定位权限，允许后即可显示当地天气氛围。
+The first launch asks for location permission — allow it and your local weather mood appears.
 
-### Windows（需要 .NET 8 SDK，目标机器需 WebView2 Runtime，Win10/11 一般已内置）
+### Windows (requires .NET 8 SDK; WebView2 Runtime on the target machine, built into Win10/11)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File windows\build.ps1
-# 产物：windows\publish\DesktopWeather.exe
+# Output: windows\publish\DesktopWeather.exe
 ```
 
-窗口会嵌入桌面壁纸层（WorkerW 技术，与 Wallpaper Engine 同款方案）。
+The window is embedded into the desktop wallpaper layer (WorkerW technique, same approach as Wallpaper Engine).
 
-## 架构
+## Architecture
 
 ```
-app/            共享 Web 核心（两平台通用）
-├── js/fx.js        Canvas 2D 特效引擎（粒子/云/辉光/暗角/闪电）
-├── js/palette.js   14 套昼/夜精细调色板
-├── js/weather.js   Open-Meteo 天气 + 城市搜索 + IP 定位兜底
-├── settings.html   设置页（城市选择 + 强度滑块）
-└── js/bridge.js    页面 ↔ 原生壳桥接
+app/            Shared web core (works on both platforms)
+├── js/fx.js        Canvas 2D effects engine (particles / clouds / glow / vignette / lightning)
+├── js/palette.js   14 fine-tuned day/night palettes
+├── js/weather.js   Open-Meteo weather + city search + IP location fallback
+├── settings.html   Settings page (city picker + intensity slider)
+└── js/bridge.js    Bridge between the page and native shells
 
-macos/          Swift 壳：WKWebView 挂 kCGDesktopWindowLevel 桌面层
-windows/        C# 壳：WebView2 嵌入 WorkerW 桌面壁纸层
+macos/          Swift shell: WKWebView pinned to the kCGDesktopWindowLevel desktop layer
+windows/        C# shell: WebView2 embedded in the WorkerW wallpaper layer
 ```
 
-两平台壳与页面之间使用同一套桥接协议（`DW.initB64` / `DW.applySettingsB64` / `DW.setCoordsB64`，base64 JSON 传参）。
+Both shells talk to the page through the same bridge protocol (`DW.initB64` / `DW.applySettingsB64` / `DW.setCoordsB64`, base64 JSON payloads).
 
-## 数据与隐私
+## Data & Privacy
 
-- 天气与地理编码：[Open-Meteo](https://open-meteo.com)（免费、无需 API Key）
-- IP 定位兜底：ipapi.co / ipwho.is
-- 位置信息仅用于获取天气数据，不做任何其他用途；设置只保存在本机
+- Weather & geocoding: [Open-Meteo](https://open-meteo.com) (free, no API key)
+- IP location fallback: ipapi.co / ipwho.is
+- Your location is used solely to fetch weather data — nothing else. Settings stay on your machine.
 
 ## License
 
