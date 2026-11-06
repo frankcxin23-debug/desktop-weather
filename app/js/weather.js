@@ -14,16 +14,38 @@ const Weather = {
     return 'overcast';
   },
 
+  // WMO 天气代码 → 中文描述
+  desc(code) {
+    const m = { 0: '晴', 1: '基本晴', 2: '局部多云', 3: '阴',
+      45: '雾', 48: '雾凇',
+      51: '毛毛雨', 53: '毛毛雨', 55: '浓毛毛雨', 56: '冻毛毛雨', 57: '冻毛毛雨',
+      61: '小雨', 63: '中雨', 65: '大雨', 66: '冻雨', 67: '强冻雨',
+      71: '小雪', 73: '中雪', 75: '大雪', 77: '米雪',
+      80: '阵雨', 81: '阵雨', 82: '强阵雨', 85: '阵雪', 86: '强阵雪',
+      95: '雷阵雨', 96: '雷阵雨伴冰雹', 99: '雷阵雨伴冰雹' };
+    return m[code] || '未知';
+  },
+
   async fetch(lat, lon) {
     const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      '&current=temperature_2m,weather_code,is_day&timezone=auto';
+      '&current=temperature_2m,weather_code,is_day,wind_speed_10m,cloud_cover,precipitation,relative_humidity_2m&timezone=auto';
     const res = await fetch(u);
     if (!res.ok) throw new Error('weather http ' + res.status);
     const j = await res.json();
+    const c = j.current;
     return {
-      condition: this.condition(j.current.weather_code),
-      isDay: j.current.is_day === 1,
-      temp: j.current.temperature_2m
+      condition: this.condition(c.weather_code),
+      desc: this.desc(c.weather_code),
+      isDay: c.is_day === 1,
+      temp: c.temperature_2m,
+      // 真实气象要素，驱动特效细节
+      env: {
+        wind: c.wind_speed_10m ?? 2,          // km/h
+        cloud: c.cloud_cover ?? 50,           // 0-100 %
+        precip: c.precipitation ?? 0,         // mm/h
+        temp: c.temperature_2m ?? 15,         // °C
+        humidity: c.relative_humidity_2m ?? 60 // 0-100 %
+      }
     };
   },
 

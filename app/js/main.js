@@ -32,7 +32,12 @@ const App = {
   },
 
   pushState() {
-    FX.setState({ condition: this.lastW.condition, isDay: this.lastW.isDay, intensity: this.settings.intensity });
+    const p = {
+      condition: this.lastW.condition, isDay: this.lastW.isDay,
+      intensity: this.settings.intensity
+    };
+    if (this.lastW.env) p.env = this.lastW.env; // demo 模式无 env,保留 FX 默认值
+    FX.setState(p);
   },
 
   start() {
@@ -75,7 +80,7 @@ const App = {
     if (!this.coords) return;
     try {
       const w = await Weather.fetch(this.coords.lat, this.coords.lon);
-      this.lastW = { condition: w.condition, isDay: w.isDay };
+      this.lastW = { condition: w.condition, isDay: w.isDay, env: w.env };
       this.pushState();
     } catch (e) {
       // 失败时保持当前效果，稍后重试

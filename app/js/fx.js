@@ -5,7 +5,8 @@ const FX = (() => {
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, DPR = 1;
 
-  const state = { condition: 'clear', isDay: true, intensity: 1 };
+  const state = { condition: 'clear', isDay: true, intensity: 1,
+    env: { wind: 4, cloud: 60, precip: 0.5, temp: 15, humidity: 65 } };
   let prevKey = null, curKey = 'clear-day';
   let tintBlend = 1;   // 色调交叉过渡 0→1
   let fade = 1;        // 粒子/云 淡入 0→1
@@ -100,6 +101,21 @@ const FX = (() => {
   // ---------- 场景重建 ----------
   function areaK() { return Math.max(0.6, Math.min(1.6, (W * H) / (1440 * 900))); }
 
+  // ---- 真实气象要素 → 视觉参数 ----
+  const windPx = () => Math.min(150, state.env.wind * 3.2);            // km/h → 水平漂移 px/s
+  const precipK = f => {                                                // 降水强度 → 粒子密度系数
+    const p = state.env.precip;
+    return f(p);
+  };
+  const cloudK = () => 0.3 + (state.env.cloud / 100) * 1.2;             // 云量 0-100 → 云数量系数
+  const tempShift = () =>                                               // 温度 → 额外色调层
+    state.env.temp <= 0 ? { c: '160,200,255', a: Math.min(-state.env.temp / 25, 1) * 0.10 } :
+    state.env.temp >= 30 ? { c: '255,150,60', a: Math.min((state.env.temp - 30) / 15, 1) * 0.08 } :
+    null;
+  const hazeA = () =>                                                   // 湿度 → 底部薄雾
+    (state.condition !== 'fog' && state.env.humidity > 82)
+      ? (state.env.humidity - 82) / 18 * 0.10 : 0;
+
   function rebuild(keepScene) {
     const { condition, isDay, intensity } = state;
     const k = areaK() * intensity;
@@ -120,7 +136,7 @@ const FX = (() => {
     if (!keepScene) clouds = [];
     if (pal.clouds && clouds.length === 0) {
       const cc = pal.clouds;
-      const n = Math.max(1, Math.round(cc.count * areaK() * Math.min(intensity, 1.4)));
+      const n = Math.max(1, Math.round(cc.count * areaK() * Math.min(intensity, 1.4) * cloudK()));
       const sp = cloudSprite(cc.c[0], cc.c[1], cc.c[2]);
       for (let i = 0; i < n; i++) {
         const sc = rand(cc.scale[0], cc.scale[1]);
@@ -132,7 +148,10 @@ const FX = (() => {
 
     // 雨（三层景深）
     rains = [];
-    const rainFactor = condition === 'rain' ? 1 : condition === 'drizzle' ? 0.45 : condition === 'thunder' ? 1.4 : 0;
+    const rainFactor = (condition === 'rain' ? 1 * precipK(p => Math.min(Math.max(p / 2.5, 0.55), 1.6))
+      : condition === 'drizzle' ? 0.45 * precipK(p => Math.min(Math.max(p / 0.4, 0.6), 1.3))
+      : condition === 'thunder' ? 1.4 * precipK(p => Math.min(Math.max(p / 4, 0.8), 1.5))
+      : 0);
     if (rainFactor > 0) {
       const layers = [
         { n: 110, w: [2.2, 3.4], len: [26, 44], v: [880, 1200], a: 0.50, drift: 20 },
@@ -148,7 +167,8 @@ const FX = (() => {
     // 雪（双层景深）
     snows = [];
     if (condition === 'snow') {
-      const near = Math.round(18 * k), far = Math.round(30 * k);
+      const snowK = precipK(p => Math.min(Math.max(0.7 + p * 1.2, 0.8), 1.6));
+      const near = Math.round(18 * k * snowK), far = Math.round(30 * k * snowK);
       for (let i = 0; i < near; i++) snows.push(newSnow([2.6, 4.2], [85, 125], 0.9, true));
       for (let i = 0; i < far; i++) snows.push(newSnow([1.2, 2.2], [45, 75], 0.5, true));
     }
@@ -187,8 +207,11 @@ const FX = (() => {
     const condChanged = next.condition !== state.condition || next.isDay !== state.isDay;
     const intChanged = next.intensity !== undefined &&
       Math.abs(next.intensity - state.intensity) > 0.001;
+    const prevEnv = state.env;
     Object.assign(state, next);
     const nk = key(state);
+    const envChanged = next.env !== undefined &&
+      ['wind', 'cloud', 'precip'].some(kk => next.env[kk] !== prevEnv[kk]);
     if (condChanged) {
       prevKey = curKey; curKey = nk;
       tintBlend = 0; fade = 0;
@@ -196,8 +219,8 @@ const FX = (() => {
     } else if (nk !== curKey) {
       curKey = nk;
       rebuild(false);
-    } else if (intChanged) {
-      // 仅强度变化：重建粒子数量，但保留云/星空/水珠的现有场景，避免跳变
+    } else if (intChanged || envChanged) {
+      // 强度或气象要素变化：重建粒子密度，保留云/星空/水珠场景避免跳变
       rebuild(true);
     }
   }
@@ -229,6 +252,23 @@ const FX = (() => {
     ctx.fillRect(0, 0, W, H);
   }
 
+  // 真实气象氛围层：温度色调 + 湿度薄雾（每帧微妙叠加）
+  function drawAmbient(alphaMul) {
+    const ts = tempShift();
+    if (ts && ts.a > 0.005) {
+      ctx.fillStyle = `rgba(${ts.c},${ts.a * state.intensity * alphaMul})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    const hz = hazeA();
+    if (hz > 0.004) {
+      const gr = ctx.createLinearGradient(0, H * 0.55, 0, H);
+      gr.addColorStop(0, 'rgba(215,225,238,0)');
+      gr.addColorStop(1, `rgba(215,225,238,${hz * state.intensity * alphaMul})`);
+      ctx.fillStyle = gr;
+      ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    }
+  }
+
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
@@ -248,6 +288,7 @@ const FX = (() => {
     }
 
     drawGlow(t, fA);
+    drawAmbient(fA);
 
     // 星空
     if (stars.length) {
@@ -262,31 +303,35 @@ const FX = (() => {
       ctx.globalAlpha = 1;
     }
 
-    // 流云
+    // 流云（速度随风速增强，支持双向环绕）
+    const wpx = windPx();
     for (const c of clouds) {
-      c.x += c.v * dt;
+      c.x += (c.v + wpx * 0.5) * dt;
       if (c.x - c.w / 2 > W) c.x = -c.w / 2;
+      else if (c.x + c.w / 2 < 0) c.x = W + c.w / 2;
       ctx.globalAlpha = c.a * fA * Math.min(state.intensity, 1.5);
       ctx.drawImage(c.sp, c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
     }
     ctx.globalAlpha = 1;
 
-    // 雨
+    // 雨（倾角随风速增大）
     if (rains.length) {
       for (let i = 0; i < rains.length; i++) {
         const p = rains[i];
         p.y += p.v * dt;
-        p.x += p.drift * dt;
-        if (p.y > H + 60) rains[i] = newRain(p, false);
+        p.x += (p.drift + wpx) * dt;
+        if (p.y > H + 60 || p.x < -120 || p.x > W + 120) rains[i] = newRain(p, false);
         ctx.globalAlpha = p.a * fA;
         ctx.drawImage(rainSprite, p.x, p.y, p.w, p.len);
       }
       ctx.globalAlpha = 1;
     }
 
-    // 雪
+    // 雪（水平漂移随风速增大）
     for (const s of snows) {
       s.y += s.v * dt;
+      s.bx += wpx * 0.6 * dt;
+      if (s.bx < -40) s.bx += W + 80; else if (s.bx > W + 40) s.bx -= W + 80;
       const x = s.bx + Math.sin(t * s.frq + s.ph) * s.amp;
       if (s.y > H + 20) { s.y = rand(-30, -10); s.bx = Math.random() * W; }
       ctx.globalAlpha = s.a * fA;
@@ -310,8 +355,9 @@ const FX = (() => {
       : state.condition === 'drizzle' ? { iv: 2.6, max: 5 }
       : state.condition === 'thunder' ? { iv: 0.9, max: 12 } : null;
     if (dropCfg) {
+      const pk = precipK(p => Math.min(Math.max(0.6 + p * 0.35, 0.7), 1.7)); // 降水越大水珠越频繁
       dropAcc += dt;
-      const iv = dropCfg.iv / Math.max(state.intensity, 0.4);
+      const iv = dropCfg.iv / (Math.max(state.intensity, 0.4) * pk);
       const max = Math.round(dropCfg.max * state.intensity);
       if (dropAcc > iv && drops.length < max) {
         dropAcc = 0;

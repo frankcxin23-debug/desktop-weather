@@ -24,6 +24,7 @@ const SUI = {
     Object.assign(this.s, cfg || {});
     this.bind();
     this.render();
+    this.refreshWx();
   },
 
   $: id => document.getElementById(id),
@@ -35,6 +36,7 @@ const SUI = {
         this.s.useManualCity = b.dataset.mode === 'manual';
         this.render();
         this.save();
+        this.refreshWx();
       });
     });
 
@@ -146,7 +148,43 @@ const SUI = {
     this.s.lon = lon;
     this.render();
     this.save();
-    this.$('cityStatus').innerHTML = `已切换到 <b>${name}</b>，桌面即刻更新`;
+    this.refreshWx();
+  },
+
+  // ---- 当前城市当日实时天气（设置页直接向 Open-Meteo 拉取）----
+  wxSeq: 0,
+  async refreshWx() {
+    const seq = ++this.wxSeq;
+    const st = this.$('cityStatus');
+    if (this.s.useManualCity && this.s.lat != null) {
+      this.fetchWx(seq, this.s.lat, this.s.lon, this.s.cityName);
+    } else if (!this.s.useManualCity) {
+      // 自动定位：设置页自行 IP 定位（系统精确定位在特效页，显示天气足够）
+      st.innerHTML = '<span class="wx-loading">正在定位…</span>';
+      try {
+        const loc = await Weather.ipLocation();
+        if (seq === this.wxSeq) this.fetchWx(seq, loc.lat, loc.lon, loc.city);
+      } catch (e) {
+        if (seq === this.wxSeq) st.innerHTML = '<span class="wx-loading">定位失败</span>';
+      }
+    }
+  },
+
+  async fetchWx(seq, lat, lon, city) {
+    const st = this.$('cityStatus');
+    st.innerHTML = '<span class="wx-loading">正在获取天气…</span>';
+    try {
+      const w = await Weather.fetch(lat, lon);
+      if (seq !== this.wxSeq) return; // 已切换到别的城市，丢弃过期结果
+      const e = w.env;
+      st.innerHTML =
+        `<div class="wx"><div class="wx-main"><b>${city || '当前位置'}</b> · ${w.desc} · ` +
+        `${Math.round(w.temp)}°C${w.isDay ? '' : ' · 夜'}</div>` +
+        `<div class="wx-sub">风 ${Math.round(e.wind)} km/h · 湿度 ${Math.round(e.humidity)}% · ` +
+        `云量 ${Math.round(e.cloud)}% · 降水 ${e.precip} mm/h</div></div>`;
+    } catch (err) {
+      if (seq === this.wxSeq) st.innerHTML = '<span class="wx-loading">天气获取失败，将自动重试</span>';
+    }
   },
 
   save() { DWUtil.save(this.s); }
@@ -170,3 +208,9 @@ async function Weather_search(q) {
 window.DW = {
   initB64(b64) { SUI.init(DWUtil.parse(b64)); }
 };
+
+// 浏览器直开兜底：无原生壳注入时用默认配置初始化（便于预览与调试）
+if (!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.dwBridge) &&
+    !(window.chrome && window.chrome.webview)) {
+  SUI.init({ intensity: 1, useManualCity: false, cityName: '', lat: null, lon: null });
+}
