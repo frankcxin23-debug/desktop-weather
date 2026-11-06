@@ -8,6 +8,10 @@ window.DWUtil = {
   },
   // 设置页保存设置 → 原生壳持久化并同步到特效页
   save(obj) {
+    this.send(obj);
+  },
+  // 通用消息（含不落盘的运行时状态，如音乐播放状态）
+  send(obj) {
     const s = JSON.stringify(obj);
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.dwBridge) {
       window.webkit.messageHandlers.dwBridge.postMessage(s);

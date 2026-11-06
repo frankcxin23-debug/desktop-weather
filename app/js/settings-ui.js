@@ -18,16 +18,16 @@ const SUI = {
   ],
   // 地图上的全球参考城市（世界时钟风格，分布均衡避免重叠）
   worldCities: [
-    { name: '东京', lat: 35.6762, lon: 139.6503 },
-    { name: '新加坡', lat: 1.3521, lon: 103.8198 },
-    { name: '悉尼', lat: -33.8688, lon: 151.2093 },
-    { name: '迪拜', lat: 25.2048, lon: 55.2708 },
-    { name: '莫斯科', lat: 55.7558, lon: 37.6173 },
-    { name: '伦敦', lat: 51.5074, lon: -0.1278 },
-    { name: '巴黎', lat: 48.8566, lon: 2.3522 },
-    { name: '纽约', lat: 40.7128, lon: -74.0060 },
-    { name: '洛杉矶', lat: 34.0522, lon: -118.2437 },
-    { name: '圣保罗', lat: -23.5505, lon: -46.6333 }
+    { name: '东京', lat: 35.6762, lon: 139.6503, country: 'JP' },
+    { name: '新加坡', lat: 1.3521, lon: 103.8198, country: 'SG' },
+    { name: '悉尼', lat: -33.8688, lon: 151.2093, country: 'AU' },
+    { name: '迪拜', lat: 25.2048, lon: 55.2708, country: 'AE' },
+    { name: '莫斯科', lat: 55.7558, lon: 37.6173, country: 'RU' },
+    { name: '伦敦', lat: 51.5074, lon: -0.1278, country: 'GB' },
+    { name: '巴黎', lat: 48.8566, lon: 2.3522, country: 'FR' },
+    { name: '纽约', lat: 40.7128, lon: -74.0060, country: 'US' },
+    { name: '洛杉矶', lat: 34.0522, lon: -118.2437, country: 'US' },
+    { name: '圣保罗', lat: -23.5505, lon: -46.6333, country: 'BR' }
   ],
   searchTimer: null,
   saveTimer: null,
@@ -35,6 +35,10 @@ const SUI = {
 
   init(cfg) {
     Object.assign(this.s, cfg || {});
+    if (!this.s.music) this.s.music = {
+      enabled: true, mode: 'always', volume: 0.35,
+      weathers: ['rain', 'drizzle', 'thunder', 'snow', 'fog', 'overcast'], cities: []
+    };
     this.bind();
     this.render();
     this.renderMap();
@@ -45,10 +49,10 @@ const SUI = {
     const manual = this.s.useManualCity && this.s.lat != null;
     const pts = this.worldCities.slice();
     if (manual && !pts.some(p => p.name === this.s.cityName)) {
-      pts.push({ name: this.s.cityName, lat: this.s.lat, lon: this.s.lon });
+      pts.push({ name: this.s.cityName, lat: this.s.lat, lon: this.s.lon, country: this.s.country || '' });
     }
     WorldMap.render(this.$('worldmap'), pts,
-      manual ? this.s.cityName : '', p => this.pick(p.name, p.lat, p.lon));
+      manual ? this.s.cityName : '', p => this.pick(p.name, p.lat, p.lon, p.country));
   },
 
   $: id => document.getElementById(id),
@@ -87,7 +91,7 @@ const SUI = {
       const el = document.createElement('div');
       el.className = 'chip';
       el.textContent = c.name;
-      el.addEventListener('click', () => this.pick(c.name, c.lat, c.lon));
+      el.addEventListener('click', () => this.pick(c.name, c.lat, c.lon, 'CN'));
       chips.appendChild(el);
     }
 
@@ -99,6 +103,64 @@ const SUI = {
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => this.save(), 120);
     });
+
+    // ---- 背景音乐 ----
+    const M_WX = [['drizzle', '毛毛雨'], ['rain', '雨'], ['thunder', '雷雨'], ['snow', '雪'], ['fog', '雾'], ['overcast', '阴']];
+    const mw = this.$('mWeathers');
+    for (const [k, label] of M_WX) {
+      const el = document.createElement('div');
+      el.className = 'chip';
+      el.textContent = label;
+      el.dataset.k = k;
+      el.addEventListener('click', () => {
+        const list = this.s.music.weathers;
+        const i = list.indexOf(k);
+        if (i >= 0) list.splice(i, 1); else list.push(k);
+        this.renderMusic();
+        this.save();
+      });
+      mw.appendChild(el);
+    }
+    this.$('mSwitch').addEventListener('click', () => {
+      this.s.music.enabled = !this.s.music.enabled;
+      this.renderMusic();
+      this.save();
+    });
+    this.$('mSeg').querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        this.s.music.mode = b.dataset.m;
+        this.renderMusic();
+        this.save();
+      });
+    });
+    this.$('mCities').addEventListener('input', () => {
+      this.s.music.cities = this.$('mCities').value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
+      clearTimeout(this.saveTimer);
+      this.saveTimer = setTimeout(() => this.save(), 300);
+    });
+    this.$('mVol').addEventListener('input', () => {
+      this.s.music.volume = Number(this.$('mVol').value);
+      clearTimeout(this.saveTimer);
+      this.saveTimer = setTimeout(() => this.save(), 120);
+    });
+  },
+
+  renderMusic() {
+    const m = this.s.music;
+    this.$('mSwitch').classList.toggle('on', m.enabled);
+    this.$('mSeg').querySelectorAll('button').forEach(b => {
+      b.classList.toggle('on', b.dataset.m === m.mode);
+    });
+    this.$('mWeathers').classList.toggle('hidden', m.mode !== 'weather');
+    this.$('mWeathers').querySelectorAll('.chip').forEach(el => {
+      el.classList.toggle('sel', m.weathers.includes(el.dataset.k));
+    });
+    this.$('mCityRow').classList.toggle('hidden', m.mode !== 'city');
+    if (document.activeElement !== this.$('mCities')) {
+      this.$('mCities').value = m.cities.join(', ');
+    }
+    this.$('mVol').value = String(m.volume);
+    this.$('mBody').classList.toggle('off', !m.enabled);
   },
 
   render() {
@@ -123,6 +185,7 @@ const SUI = {
     this.$('chips').querySelectorAll('.chip').forEach(el => {
       el.classList.toggle('sel', this.s.useManualCity && el.textContent === this.s.cityName);
     });
+    this.renderMusic();
   },
 
   async doSearch(v) {
@@ -161,16 +224,17 @@ const SUI = {
         ck.textContent = '当前';
         row.appendChild(ck);
       }
-      row.addEventListener('click', () => this.pick(r.name, r.lat, r.lon));
+      row.addEventListener('click', () => this.pick(r.name, r.lat, r.lon, r.country));
       box.appendChild(row);
     }
   },
 
-  pick(name, lat, lon) {
+  pick(name, lat, lon, country) {
     this.s.useManualCity = true;
     this.s.cityName = name;
     this.s.lat = lat;
     this.s.lon = lon;
+    if (country) this.s.country = country;
     this.render();
     this.renderMap();
     this.save();

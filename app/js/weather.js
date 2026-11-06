@@ -60,22 +60,23 @@ const Weather = {
       name: r.name,
       display: [r.name, r.admin1, r.country].filter(Boolean).join(' · '),
       lat: r.latitude,
-      lon: r.longitude
+      lon: r.longitude,
+      country: r.country_code || ''
     }));
   },
 
-  // IP 定位兜底
+  // IP 定位兜底（返回国家代码供音乐源选择地区）
   async ipLocation() {
     try {
       const r = await fetch('https://ipapi.co/json/');
       const j = await r.json();
-      if (j.latitude != null) return { lat: j.latitude, lon: j.longitude, city: j.city || '' };
+      if (j.latitude != null) return { lat: j.latitude, lon: j.longitude, city: j.city || '', country: j.country_code || 'CN' };
     } catch (e) { /* 继续尝试下一个 */ }
     try {
       const r = await fetch('https://ipwho.is/');
       const j = await r.json();
-      if (j.latitude != null) return { lat: j.latitude, lon: j.longitude, city: j.city || '' };
+      if (j.latitude != null) return { lat: j.latitude, lon: j.longitude, city: j.city || '', country: j.country_code || 'CN' };
     } catch (e) { /* 忽略 */ }
-    return { lat: 39.9042, lon: 116.4074, city: '北京' };
+    return { lat: 39.9042, lon: 116.4074, city: '北京', country: 'CN' };
   }
 };

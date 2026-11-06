@@ -11,6 +11,8 @@ public sealed class Settings
     public string CityName { get; set; } = "";
     public double? Lat { get; set; }
     public double? Lon { get; set; }
+    public string Country { get; set; } = "";
+    public string? Music { get; set; }
 
     private static string Dir =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DesktopWeather");
@@ -47,6 +49,8 @@ public sealed class Settings
         sb.Append($"\"cityName\":{JsonSerializer.Serialize(CityName)}");
         if (Lat.HasValue) sb.Append($",\"lat\":{Lat.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}");
         if (Lon.HasValue) sb.Append($",\"lon\":{Lon.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}");
+        if (!string.IsNullOrEmpty(Country)) sb.Append($",\"country\":{JsonSerializer.Serialize(Country)}");
+        if (!string.IsNullOrEmpty(Music)) sb.Append($",\"music\":{Music}");
         sb.Append('}');
         return sb.ToString();
     }

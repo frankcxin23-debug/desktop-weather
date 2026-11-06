@@ -14,6 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
 
     private var screens: [ScreenView] = []
     private var statusItem: NSStatusItem!
+    private var npItem: NSMenuItem!
+    private var ppItem: NSMenuItem!
     private var settingsWindow: NSWindow?
     private var settingsWeb: WKWebView?
     private let location = LocationManager()
@@ -24,8 +26,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
         static let cityName = "dw.cityName"
         static let lat = "dw.lat"
         static let lon = "dw.lon"
+        static let country = "dw.country"
+        static let music = "dw.music"
     }
     private let d = UserDefaults.standard
+
+    // 菜单栏音乐状态（由特效页推送）
+    private var musicPaused = false
+    private var musicNowTitle = ""
 
     // MARK: - 生命周期
 
@@ -57,11 +65,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
         )
     }
 
+    private func musicConfig() -> [String: Any]? {
+        guard let s = d.string(forKey: K.music),
+              let data = s.data(using: .utf8),
+              let m = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return m
+    }
+
     private func settingsJSON() -> [String: Any] {
         let s = settings()
         var j: [String: Any] = ["intensity": s.intensity, "useManualCity": s.useManual, "cityName": s.name]
         if let lat = s.lat { j["lat"] = lat }
         if let lon = s.lon { j["lon"] = lon }
+        if let c = d.string(forKey: K.country) { j["country"] = c }
+        if let m = musicConfig() { j["music"] = m }
         return j
     }
 
@@ -70,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
     private func makeWebView(_ page: String) -> WKWebView {
         let cfg = WKWebViewConfiguration()
         cfg.userContentController.add(LeakSafeHandler(self), name: "dwBridge")
+        cfg.mediaTypesRequiringUserAction = []  // 允许背景音乐自动播放
         let web = WKWebView(frame: .zero, configuration: cfg)
         web.navigationDelegate = self
         web.setValue(false, forKey: "drawsBackground")
@@ -81,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
     }
 
     private func setupScreens() {
-        for screen in NSScreen.screens {
+        for (idx, screen) in NSScreen.screens.enumerated() {
             let win = NSWindow(
                 contentRect: screen.frame,
                 styleMask: [.borderless],
@@ -94,7 +112,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
             win.ignoresMouseEvents = true
             win.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
 
-            let web = makeWebView("index.html")
+            // 仅主屏出声，副屏静音避免重复播放
+            let web = makeWebView(idx == 0 ? "index.html" : "index.html?nosound=1")
             web.frame = NSRect(origin: .zero, size: screen.frame.size)
             web.autoresizingMask = [.width, .height]
             win.contentView = web
@@ -111,6 +130,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
             b.image = NSImage(systemSymbolName: "cloud.sun.fill", accessibilityDescription: "桌面天气")
         }
         let menu = NSMenu()
+        menu.delegate = self
+
+        npItem = NSMenuItem(title: "背景音乐", action: nil, keyEquivalent: "")
+        npItem.isEnabled = false
+        menu.addItem(npItem)
+
+        ppItem = NSMenuItem(title: "暂停背景音乐", action: #selector(musicToggleAction), keyEquivalent: "m")
+        ppItem.target = self
+        menu.addItem(ppItem)
+
+        let next = NSMenuItem(title: "下一首", action: #selector(musicNextAction), keyEquivalent: "n")
+        next.target = self
+        menu.addItem(next)
+
+        menu.addItem(.separator())
 
         let set = NSMenuItem(title: "设置…", action: #selector(openSettings), keyEquivalent: ",")
         set.target = self
@@ -130,6 +164,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
                                 action: #selector(NSApplication.terminate(_:)),
                                 keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+
+    @objc private func musicToggleAction() {
+        screens.first?.web.evaluateJavaScript("musicToggle()") { _, _ in }
+    }
+
+    @objc private func musicNextAction() {
+        screens.first?.web.evaluateJavaScript("musicNext()") { _, _ in }
     }
 
     @objc private func refreshNow() { callAll("DW.refresh") }
@@ -187,12 +229,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
               let data = s.data(using: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
+        // 运行时状态（音乐播放状态）：只更新菜单，不落盘不同步
+        if obj["type"] as? String == "music" {
+            musicPaused = obj["paused"] as? Bool ?? false
+            let t = obj["title"] as? String ?? ""
+            let a = obj["artist"] as? String ?? ""
+            musicNowTitle = t.isEmpty ? "" : t + (a.isEmpty ? "" : " - \(a)")
+            return
+        }
+
         // 持久化
         if let v = obj["intensity"] as? Double { d.set(v, forKey: K.intensity) }
         if let v = obj["useManualCity"] as? Bool { d.set(v, forKey: K.useManual) }
         if let v = obj["cityName"] as? String { d.set(v, forKey: K.cityName) }
         d.set(obj["lat"] as? Double, forKey: K.lat)
         d.set(obj["lon"] as? Double, forKey: K.lon)
+        if let v = obj["country"] as? String { d.set(v, forKey: K.country) }
+        if let m = obj["music"] as? [String: Any],
+           let md = try? JSONSerialization.data(withJSONObject: m),
+           let ms = String(data: md, encoding: .utf8) {
+            d.set(ms, forKey: K.music)
+        }
 
         // 同步到所有特效页
         let json = settingsJSON()
@@ -246,5 +303,15 @@ private final class LeakSafeHandler: NSObject, WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
         target?.userContentController(userContentController, didReceive: message)
+    }
+}
+
+/// 菜单打开时刷新音乐状态标题
+extension AppDelegate: NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        npItem.title = musicNowTitle.isEmpty
+            ? (musicPaused ? "背景音乐已暂停" : "背景音乐")
+            : "正在播放：\(musicNowTitle)"
+        ppItem.title = musicPaused ? "播放背景音乐" : "暂停背景音乐"
     }
 }

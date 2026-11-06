@@ -24,6 +24,10 @@ public sealed class AppContext : ApplicationContext
     private WebView2? _settingsWeb;
     private readonly NotifyIcon _tray;
     private bool _desktopReady;
+    private readonly ToolStripMenuItem _npItem = new("背景音乐") { Enabled = false };
+    private readonly ToolStripMenuItem _ppItem = new("暂停背景音乐");
+    private string _musicNow = "";
+    private bool _musicPaused;
 
     public AppContext()
     {
@@ -44,7 +48,15 @@ public sealed class AppContext : ApplicationContext
         _ = InitDesktopWebAsync();
 
         // ---- 托盘 ----
+        _ppItem.Click += (_, _) => _ = CallPage(_desktopWeb, "musicToggle", null);
+        var nextItem = new ToolStripMenuItem("下一首");
+        nextItem.Click += (_, _) => _ = CallPage(_desktopWeb, "musicNext", null);
+
         var menu = new ContextMenuStrip();
+        menu.Items.Add(_npItem);
+        menu.Items.Add(_ppItem);
+        menu.Items.Add(nextItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("设置…", null, (_, _) => OpenSettings());
         menu.Items.Add("立即刷新", null, (_, _) => _ = CallPage(_desktopWeb, "DW.refresh", null));
         menu.Items.Add(new ToolStripSeparator());
@@ -94,6 +106,11 @@ public sealed class AppContext : ApplicationContext
             await _desktopWeb.EnsureCoreWebView2Async();
             _desktopWeb.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             _desktopWeb.CoreWebView2.Settings.IsStatusBarEnabled = false;
+            // 页面 → 壳：音乐播放状态（不落盘，只更新托盘菜单）
+            _desktopWeb.CoreWebView2.WebMessageReceived += (_, e) =>
+            {
+                try { HandleMusicMessage(e.WebMessageAsJson); } catch { /* 忽略 */ }
+            };
             _desktopWeb.CoreWebView2.NavigationCompleted += (_, _) =>
             {
                 _desktopReady = true;
@@ -158,6 +175,22 @@ public sealed class AppContext : ApplicationContext
         catch { /* 忽略 */ }
     }
 
+    private void HandleMusicMessage(string json)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (!root.TryGetProperty("type", out var t) || t.GetString() != "music") return;
+        _musicPaused = root.TryGetProperty("paused", out var p) && p.GetBoolean();
+        string title = root.TryGetProperty("title", out var ti) ? ti.GetString() ?? "" : "";
+        string artist = root.TryGetProperty("artist", out var ar) ? ar.GetString() ?? "" : "";
+        _musicNow = title.Length == 0 ? "" : title + (artist.Length == 0 ? "" : $" - {artist}");
+
+        _npItem.Text = _musicNow.Length == 0
+            ? (_musicPaused ? "背景音乐已暂停" : "背景音乐")
+            : $"正在播放：{_musicNow}";
+        _ppItem.Text = _musicPaused ? "播放背景音乐" : "暂停背景音乐";
+    }
+
     private void ApplySettingsFromPage(string json)
     {
         using var doc = System.Text.Json.JsonDocument.Parse(json);
@@ -169,6 +202,10 @@ public sealed class AppContext : ApplicationContext
             ? la.GetDouble() : null;
         _settings.Lon = root.TryGetProperty("lon", out var lo) && lo.ValueKind != System.Text.Json.JsonValueKind.Null
             ? lo.GetDouble() : null;
+        if (root.TryGetProperty("country", out var co) && co.ValueKind == System.Text.Json.JsonValueKind.String)
+            _settings.Country = co.GetString() ?? "";
+        if (root.TryGetProperty("music", out var mu) && mu.ValueKind == System.Text.Json.JsonValueKind.Object)
+            _settings.Music = mu.GetRawText();
         _settings.Save();
 
         if (_desktopReady)

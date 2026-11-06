@@ -32,6 +32,32 @@
     </div>
 
     <div id="cityStatus" class="status"></div>
+
+    <div class="label">背景音乐</div>
+    <div id="mBody" class="music-card">
+      <div class="m-row">
+        <span>启用</span>
+        <button type="button" id="mSwitch" class="switch" aria-label="启用背景音乐"></button>
+      </div>
+      <div class="m-row">
+        <span>触发方式</span>
+        <div class="seg m-seg" id="mSeg">
+          <button type="button" data-m="always">总是</button>
+          <button type="button" data-m="manual">手动</button>
+          <button type="button" data-m="weather">按天气</button>
+          <button type="button" data-m="city">按城市</button>
+        </div>
+      </div>
+      <div id="mWeathers" class="chips m-chips hidden"></div>
+      <div id="mCityRow" class="m-row hidden">
+        <input id="mCities" type="text" placeholder="城市名，逗号分隔，如：上海, 东京" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="m-row">
+        <span>音量</span>
+        <input id="mVol" type="range" min="0" max="1" step="0.05">
+      </div>
+      <div class="hint">按所选地区拉取热门单曲，30 秒预览低音量连播；阴雨天自动偏向低音舒缓曲目。手动模式从菜单栏开关。</div>
+    </div>
   </section>
 
   <hr>
