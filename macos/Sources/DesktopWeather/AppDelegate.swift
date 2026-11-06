@@ -87,7 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
     private func makeWebView(_ page: String) -> WKWebView {
         let cfg = WKWebViewConfiguration()
         cfg.userContentController.add(LeakSafeHandler(self), name: "dwBridge")
-        cfg.mediaTypesRequiringUserAction = []  // 允许背景音乐自动播放
+        cfg.mediaTypesRequiringUserActionForPlayback = []  // 允许背景音乐自动播放
         let web = WKWebView(frame: .zero, configuration: cfg)
         web.navigationDelegate = self
         web.setValue(false, forKey: "drawsBackground")

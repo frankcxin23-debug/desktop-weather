@@ -123,10 +123,11 @@ section { margin-top: 22px; }
   transition: opacity 0.25s;
 }
 .music-card.off .m-row:not(:first-child),
+.music-card.off .m-cred,
 .music-card.off .hint { opacity: 0.35; }
 .m-row { display: flex; align-items: center; gap: 10px; }
 .m-row > span { flex: 0 0 60px; color: var(--text-2); font-size: 12px; }
-.m-row input[type="text"] {
+.m-row input[type="text"], .m-cred input {
   flex: 1;
   background: rgba(0,0,0,0.25);
   border: 1px solid rgba(255,255,255,0.08);
@@ -136,7 +137,9 @@ section { margin-top: 22px; }
   font-size: 12.5px;
   outline: none;
 }
-.m-row input[type="text"]:focus { border-color: var(--accent); }
+.m-row input[type="text"]:focus, .m-cred input:focus { border-color: var(--accent); }
+.m-cred { display: flex; flex-direction: column; gap: 6px; margin: 2px 0; }
+.m-cred input { width: 100%; box-sizing: border-box; font-size: 12px; }
 .m-row input[type="range"] { flex: 1; }
 .m-seg { flex: 1; display: flex; }
 .m-seg button {

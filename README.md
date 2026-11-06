@@ -23,9 +23,34 @@ Each weather condition ships with finely tuned day/night gradient palettes (14 i
 ## Features
 
 - **Auto location**: system location on macOS (CoreLocation, with permission prompt), IP-based fallback; IP-based location on Windows
-- **Manual city picker**: instant search-as-you-type (Chinese/English) + 12 popular cities one click away
+- **Manual city picker**: instant search-as-you-type (Chinese/English) + 12 popular cities one click away + world map
 - **Intensity slider**: 20% – 180%, applies in real time, auto-saved
-- Weather auto-refreshes every 30 minutes, and instantly on system wake
+- **Background music plugin**: weather-mood, region-aware ambient mix (see below)
+- Weather auto-refreshes every 30 minutes, and instantly on system wake; offline it falls back to the last known city
+
+## Background Music (Plugin)
+
+An optional music plugin, **enabled by default after install**. It reads the local weather mood and the region/language you're in, then plays a quiet background mix that matches the sky: low-key, bass-heavy ballads on gloomy rainy days; bright, upbeat pop on sunny ones. Tracks cross-fade at a low ambient volume and are shown in the menu bar / tray, where you can pause or skip.
+
+You decide *when* it plays — always, manually started, only on certain weather, or only in certain cities. Multi-monitor setups play audio on the main display only.
+
+### Free vs Paid
+
+| | **Free (default)** | **Paid (bring your own API)** |
+|---|---|---|
+| Cost | $0, nothing to sign up | Any Spotify API costs are **paid by you, to Spotify** — this app is free and never charges you |
+| Song selection | iTunes public charts + mood keyword search | Spotify's search/recommendation catalog for finer mood matching |
+| Playback | Official 30-second previews, seamless mix | Same 30-second previews (see note below) |
+| Setup | None — works out of the box | Create your own free Spotify developer app and paste its Client ID + Secret in Settings |
+| If credentials fail | — | Silently falls back to the free iTunes source |
+
+**Why does the paid tier still play 30-second previews?** Full-track streaming is locked behind Spotify Premium + OAuth (Web Playback SDK) or a licensed Apple Music MusicKit token. Additionally, Spotify no longer returns preview URLs to newly registered apps. So the paid tier uses your Spotify credentials purely to **pick better-fitting songs**, then resolves an official playable preview via iTunes. Native full-song playback for Premium users is on the roadmap.
+
+### Configure the paid tier (optional)
+
+1. Create an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) (free; you own the app and agree to Spotify's terms — quota/fees, if any, are between you and Spotify).
+2. In Desktop Weather → Settings → Background Music → *Selection service*, choose **Spotify** and paste your Client ID + Client Secret.
+3. Done. Invalid or exhausted credentials simply fall back to the free source.
 
 ## Try It (No Build Required)
 
@@ -78,7 +103,8 @@ Both shells talk to the page through the same bridge protocol (`DW.initB64` / `D
 
 - Weather & geocoding: [Open-Meteo](https://open-meteo.com) (free, no API key)
 - IP location fallback: ipapi.co / ipwho.is
-- Your location is used solely to fetch weather data — nothing else. Settings stay on your machine.
+- Music previews: [Apple iTunes public API](https://itunes.apple.com) (free, no key); optional mood matching via [Spotify Web API](https://developer.spotify.com) using credentials you provide
+- Your location is used solely to fetch weather/music data — nothing else. Settings (including your Spotify credentials) stay on your machine and are only sent to the respective API.
 
 ## License
 

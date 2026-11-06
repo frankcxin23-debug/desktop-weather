@@ -13,7 +13,8 @@ const Music = {
   weather: null,        // { condition, isDay }
   city: '',
   now: null,            // { title, artist, playing }
-  cfg: { enabled: true, mode: 'always', volume: 0.35, weathers: [], cities: [] },
+  cfg: { enabled: true, mode: 'always', volume: 0.35, weathers: [], cities: [], provider: 'itunes', spotifyId: '', spotifySecret: '' },
+  _spTok: null, _spExp: 0, _spFail: false,
 
   // ---- 配置 ----
   applyConfig(m) {
@@ -23,8 +24,16 @@ const Music = {
       mode: m.mode || 'always',
       volume: typeof m.volume === 'number' ? m.volume : 0.35,
       weathers: Array.isArray(m.weathers) ? m.weathers : [],
-      cities: Array.isArray(m.cities) ? m.cities : []
+      cities: Array.isArray(m.cities) ? m.cities : [],
+      provider: m.provider === 'spotify' ? 'spotify' : 'itunes',
+      spotifyId: typeof m.spotifyId === 'string' ? m.spotifyId : '',
+      spotifySecret: typeof m.spotifySecret === 'string' ? m.spotifySecret : ''
     };
+    // 凭据变更后重新尝试 Spotify
+    if (this._spId !== this.cfg.spotifyId || this._spSec !== this.cfg.spotifySecret) {
+      this._spId = this.cfg.spotifyId; this._spSec = this.cfg.spotifySecret;
+      this._spTok = null; this._spFail = false;
+    }
     this.evalAndSync();
   },
 
@@ -134,13 +143,78 @@ const Music = {
     };
   },
 
+  // ---- Spotify 选曲（付费版：用户自备凭据；仅用于选曲，播放仍走 iTunes 预览）----
+  async spToken() {
+    if (this._spTok && Date.now() < this._spExp) return this._spTok;
+    const id = (this.cfg.spotifyId || '').trim(), sec = (this.cfg.spotifySecret || '').trim();
+    if (!id || !sec) throw new Error('spotify: no credentials');
+    const r = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(id + ':' + sec),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+    if (!r.ok) throw new Error('spotify token ' + r.status);
+    const j = await r.json();
+    if (!j.access_token) throw new Error('spotify: no token');
+    this._spTok = j.access_token;
+    this._spExp = Date.now() + (Math.max(60, (j.expires_in || 3600) - 120)) * 1000;
+    return this._spTok;
+  },
+
+  async spSearchMood(term) {
+    const tok = await this.spToken();
+    const r = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}` +
+      `&type=track&limit=10&market=${this.country.toUpperCase()}`, {
+      headers: { 'Authorization': 'Bearer ' + tok }
+    });
+    if (!r.ok) throw new Error('spotify search ' + r.status);
+    const j = await r.json();
+    return ((j.tracks && j.tracks.items) || [])
+      .map(t => ({ title: t.name, artist: (t.artists && t.artists[0] && t.artists[0].name) || '' }))
+      .filter(t => t.title);
+  },
+
+  // Spotify 只给元数据，用 iTunes 反查可播放的官方预览
+  async itunesResolve(t) {
+    try {
+      const q = `${t.title} ${t.artist}`.trim();
+      const j = await this.api(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}` +
+        `&country=${this.country.toLowerCase()}&media=music&entity=song&limit=1`);
+      const hit = (j.results || []).find(x => x.previewUrl);
+      return hit ? this.norm(hit) : null;
+    } catch (e) { return null; }
+  },
+
+  spotifyUsable() {
+    return this.cfg.provider === 'spotify' &&
+      !!this.cfg.spotifyId.trim() && !!this.cfg.spotifySecret.trim() && !this._spFail;
+  },
+
   // 队列 = 情绪曲目为主 +（天气好时混入地区热门）
   async buildQueue() {
     if (!this.weather) return;
     const cond = this.weather.condition;
     const terms = this.moodTerms(cond, this.weather.isDay, this.country);
-    const picks = await Promise.all(terms.slice(0, 2).map(t => this.searchMood(t)));
-    let mood = picks.flat();
+    let mood = [], viaSpotify = false;
+
+    // 付费路径：Spotify 选曲 → iTunes 换预览；任何失败都回退免费路径
+    if (this.spotifyUsable()) {
+      try {
+        const lists = await Promise.all(terms.slice(0, 2).map(t => this.spSearchMood(t)));
+        const cands = lists.flat();
+        if (cands.length) {
+          const resolved = (await Promise.all(cands.slice(0, 12).map(t => this.itunesResolve(t)))).filter(Boolean);
+          if (resolved.length) { mood = resolved; viaSpotify = true; }
+        }
+      } catch (e) { this._spFail = true; }
+    }
+    if (!viaSpotify) {
+      const picks = await Promise.all(terms.slice(0, 2).map(t => this.searchMood(t)));
+      mood = picks.flat();
+    }
     let hot = [];
     if (!this.isGloomy(cond)) hot = await this.topSongs();
     else if (mood.length < 5) hot = await this.topSongs();

@@ -39,6 +39,11 @@ const SUI = {
       enabled: true, mode: 'always', volume: 0.35,
       weathers: ['rain', 'drizzle', 'thunder', 'snow', 'fog', 'overcast'], cities: []
     };
+    if (!this.s.music.provider) {
+      this.s.music.provider = 'itunes';
+      this.s.music.spotifyId = this.s.music.spotifyId || '';
+      this.s.music.spotifySecret = this.s.music.spotifySecret || '';
+    }
     this.bind();
     this.render();
     this.renderMap();
@@ -138,6 +143,21 @@ const SUI = {
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => this.save(), 300);
     });
+    this.$('mProv').querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        this.s.music.provider = b.dataset.p;
+        this.renderMusic();
+        this.save();
+      });
+    });
+    const spSave = () => {
+      this.s.music.spotifyId = this.$('mSpId').value.trim();
+      this.s.music.spotifySecret = this.$('mSpSec').value;
+      clearTimeout(this.saveTimer);
+      this.saveTimer = setTimeout(() => this.save(), 300);
+    };
+    this.$('mSpId').addEventListener('input', spSave);
+    this.$('mSpSec').addEventListener('input', spSave);
     this.$('mVol').addEventListener('input', () => {
       this.s.music.volume = Number(this.$('mVol').value);
       clearTimeout(this.saveTimer);
@@ -160,6 +180,12 @@ const SUI = {
       this.$('mCities').value = m.cities.join(', ');
     }
     this.$('mVol').value = String(m.volume);
+    this.$('mProv').querySelectorAll('button').forEach(b => {
+      b.classList.toggle('on', b.dataset.p === (m.provider || 'itunes'));
+    });
+    this.$('mSpRow').classList.toggle('hidden', (m.provider || 'itunes') !== 'spotify');
+    if (document.activeElement !== this.$('mSpId')) this.$('mSpId').value = m.spotifyId || '';
+    if (document.activeElement !== this.$('mSpSec')) this.$('mSpSec').value = m.spotifySecret || '';
     this.$('mBody').classList.toggle('off', !m.enabled);
   },
 

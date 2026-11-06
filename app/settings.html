@@ -48,6 +48,18 @@
           <button type="button" data-m="city">按城市</button>
         </div>
       </div>
+      <div class="m-row">
+        <span>选曲服务</span>
+        <div class="seg m-seg" id="mProv">
+          <button type="button" data-p="itunes">免费 iTunes</button>
+          <button type="button" data-p="spotify">Spotify 付费</button>
+        </div>
+      </div>
+      <div id="mSpRow" class="m-cred hidden">
+        <input id="mSpId" type="text" placeholder="Spotify Client ID" autocomplete="off" spellcheck="false">
+        <input id="mSpSec" type="password" placeholder="Spotify Client Secret" autocomplete="off">
+        <div class="hint">凭据仅保存在本机、只发给 Spotify 官方 API（开发者后台创建应用即可）；失效时自动回退免费源。</div>
+      </div>
       <div id="mWeathers" class="chips m-chips hidden"></div>
       <div id="mCityRow" class="m-row hidden">
         <input id="mCities" type="text" placeholder="城市名，逗号分隔，如：上海, 东京" autocomplete="off" spellcheck="false">
