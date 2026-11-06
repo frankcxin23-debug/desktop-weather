@@ -187,12 +187,15 @@ const SUI = {
     } else if (!this.s.useManualCity) {
       // 自动定位：设置页自行 IP 定位（系统精确定位在特效页，显示天气足够）
       st.innerHTML = '<span class="wx-loading">正在定位…</span>';
+      let loc = null;
       try {
-        const loc = await Weather.ipLocation();
-        if (seq === this.wxSeq) this.fetchWx(seq, loc.lat, loc.lon, loc.city);
+        loc = await Weather.ipLocation();
       } catch (e) {
-        if (seq === this.wxSeq) st.innerHTML = '<span class="wx-loading">定位失败</span>';
+        // 断网：显示上次同步的天气
+        if (seq === this.wxSeq) this.renderCachedWx();
+        return;
       }
+      if (seq === this.wxSeq) this.fetchWx(seq, loc.lat, loc.lon, loc.city);
     }
   },
 
@@ -203,13 +206,33 @@ const SUI = {
       const w = await Weather.fetch(lat, lon);
       if (seq !== this.wxSeq) return; // 已切换到别的城市，丢弃过期结果
       const e = w.env;
+      const city2 = city || '当前位置';
       st.innerHTML =
-        `<div class="wx"><div class="wx-main"><b>${city || '当前位置'}</b> · ${w.desc} · ` +
+        `<div class="wx"><div class="wx-main"><b>${city2}</b> · ${w.desc} · ` +
         `${Math.round(w.temp)}°C${w.isDay ? '' : ' · 夜'}</div>` +
         `<div class="wx-sub">风 ${Math.round(e.wind)} km/h · 湿度 ${Math.round(e.humidity)}% · ` +
         `云量 ${Math.round(e.cloud)}% · 降水 ${e.precip} mm/h</div></div>`;
+      // 缓存：断网时下次打开设置仍能看到上次城市天气
+      try {
+        localStorage.setItem('dw.lastWx', JSON.stringify({ city: city2, desc: w.desc, temp: w.temp, isDay: w.isDay, env: e }));
+      } catch (err) {}
     } catch (err) {
-      if (seq === this.wxSeq) st.innerHTML = '<span class="wx-loading">天气获取失败，将自动重试</span>';
+      if (seq === this.wxSeq) this.renderCachedWx();
+    }
+  },
+
+  renderCachedWx() {
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem('dw.lastWx') || 'null'); } catch (e) {}
+    const st = this.$('cityStatus');
+    if (c && c.env) {
+      st.innerHTML =
+        `<div class="wx"><div class="wx-main"><b>${c.city}</b> · ${c.desc} · ` +
+        `${Math.round(c.temp)}°C${c.isDay ? '' : ' · 夜'} <span class="wx-tag">上次同步</span></div>` +
+        `<div class="wx-sub">风 ${Math.round(c.env.wind)} km/h · 湿度 ${Math.round(c.env.humidity)}% · ` +
+        `云量 ${Math.round(c.env.cloud)}% · 降水 ${c.env.precip} mm/h</div></div>`;
+    } else {
+      st.innerHTML = '<span class="wx-loading">网络不可用，且暂无历史天气</span>';
     }
   },
 

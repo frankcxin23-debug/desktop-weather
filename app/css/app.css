@@ -101,6 +101,15 @@ section { margin-top: 22px; }
 .wx-main b { font-weight: 600; }
 .wx-sub { margin-top: 3px; font-size: 11px; color: var(--text-3); letter-spacing: 0.2px; }
 .wx-loading { color: var(--text-3); }
+.wx-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  font-size: 10px;
+  color: var(--text-3);
+  vertical-align: 1px;
+}
 
 /* ---- 世界地图选城（世界时钟风格）---- */
 .worldmap {

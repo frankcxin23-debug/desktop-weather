@@ -63,6 +63,8 @@ const App = {
     clearTimeout(this.locTimer);
     this.coords = { lat, lon, city };
     this.started = true;
+    // 缓存定位结果：断网时下次启动直接使用上次城市
+    try { localStorage.setItem('dw.lastLoc', JSON.stringify({ lat, lon, city, t: Date.now() })); } catch (e) {}
     this.fetchWeather();
   },
 
@@ -71,22 +73,43 @@ const App = {
     this.ipLocate();
   },
 
+  readCachedLoc() {
+    try {
+      const o = JSON.parse(localStorage.getItem('dw.lastLoc') || 'null');
+      if (o && typeof o.lat === 'number' && typeof o.lon === 'number') return o;
+    } catch (e) {}
+    return null;
+  },
+
   async ipLocate() {
-    const loc = await Weather.ipLocation();
-    this.setCoords(loc.lat, loc.lon, loc.city);
+    let loc = null;
+    try {
+      loc = await Weather.ipLocation();
+    } catch (e) {
+      // 断网或 IP 服务不可用：回退到上次使用的城市
+      loc = this.readCachedLoc();
+      if (!loc) {
+        // 从未成功定位过：退回默认城市（北京）
+        loc = { lat: 39.9042, lon: 116.4074, city: '北京' };
+      }
+    }
+    this.setCoords(loc.lat, loc.lon, loc.city || '');
   },
 
   async fetchWeather() {
     if (!this.coords) return;
+    let ok = false;
     try {
       const w = await Weather.fetch(this.coords.lat, this.coords.lon);
       this.lastW = { condition: w.condition, isDay: w.isDay, env: w.env };
       this.pushState();
+      ok = true;
     } catch (e) {
-      // 失败时保持当前效果，稍后重试
+      // 断网：保持当前效果，稍后重试
     }
     clearTimeout(this.refreshTimer);
-    this.refreshTimer = setTimeout(() => this.fetchWeather(), 30 * 60 * 1000);
+    // 成功后 30 分钟刷新；失败（断网）60 秒后快速重试，网络恢复立即自愈
+    this.refreshTimer = setTimeout(() => this.fetchWeather(), ok ? 30 * 60 * 1000 : 60 * 1000);
   },
 
   refresh() { this.fetchWeather(); },
@@ -117,6 +140,9 @@ window.DW = {
   noShellLocation() { App.noShellLocation(); },
   refresh() { App.refresh(); }
 };
+
+// 网络恢复时立即重新拉取（断网自愈）
+window.addEventListener('online', () => App.refresh());
 
 // 浏览器直开预览：无原生壳时也能演示（?demo=rain / thunder-night / auto）
 const _demo = new URLSearchParams(location.search).get('demo');
