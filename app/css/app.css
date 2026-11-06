@@ -102,6 +102,50 @@ section { margin-top: 22px; }
 .wx-sub { margin-top: 3px; font-size: 11px; color: var(--text-3); letter-spacing: 0.2px; }
 .wx-loading { color: var(--text-3); }
 
+/* ---- 世界地图选城（世界时钟风格）---- */
+.worldmap {
+  margin: 10px 0 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #131c28 0%, #0d141e 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: default;
+}
+.worldmap svg { display: block; width: 100%; height: auto; }
+.wm-land { fill: rgba(148,180,220,0.17); transition: fill 0.3s; }
+.worldmap:hover .wm-land { fill: rgba(148,180,220,0.22); }
+.wm-city { cursor: pointer; }
+.wm-dot {
+  fill: rgba(235,240,250,0.5);
+  transition: fill 0.2s, r 0.2s;
+}
+.wm-city.hover .wm-dot, .wm-city:hover .wm-dot { fill: rgba(255,255,255,0.92); }
+.wm-city.sel .wm-dot { fill: var(--accent); }
+.wm-halo {
+  fill: none;
+  stroke: var(--accent);
+  stroke-opacity: 0.4;
+  stroke-width: 1.5;
+  animation: wm-pulse 2.2s ease-out infinite;
+}
+@keyframes wm-pulse {
+  0% { transform: scale(0.55); stroke-opacity: 0.5; }
+  70% { transform: scale(1.15); stroke-opacity: 0.08; }
+  100% { transform: scale(1.15); stroke-opacity: 0.08; }
+}
+.wm-label {
+  fill: #e8eaf0;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s;
+  paint-order: stroke;
+  stroke: rgba(10,15,24,0.85);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.wm-city.sel .wm-label, .wm-city.hover .wm-label, .wm-city:hover .wm-label { opacity: 1; }
+
 hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
 
 /* 强度滑块 */

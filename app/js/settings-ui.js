@@ -16,6 +16,19 @@ const SUI = {
     { name: '伦敦', lat: 51.5074, lon: -0.1278 },
     { name: '纽约', lat: 40.7128, lon: -74.0060 }
   ],
+  // 地图上的全球参考城市（世界时钟风格，分布均衡避免重叠）
+  worldCities: [
+    { name: '东京', lat: 35.6762, lon: 139.6503 },
+    { name: '新加坡', lat: 1.3521, lon: 103.8198 },
+    { name: '悉尼', lat: -33.8688, lon: 151.2093 },
+    { name: '迪拜', lat: 25.2048, lon: 55.2708 },
+    { name: '莫斯科', lat: 55.7558, lon: 37.6173 },
+    { name: '伦敦', lat: 51.5074, lon: -0.1278 },
+    { name: '巴黎', lat: 48.8566, lon: 2.3522 },
+    { name: '纽约', lat: 40.7128, lon: -74.0060 },
+    { name: '洛杉矶', lat: 34.0522, lon: -118.2437 },
+    { name: '圣保罗', lat: -23.5505, lon: -46.6333 }
+  ],
   searchTimer: null,
   saveTimer: null,
   seq: 0,
@@ -24,7 +37,18 @@ const SUI = {
     Object.assign(this.s, cfg || {});
     this.bind();
     this.render();
+    this.renderMap();
     this.refreshWx();
+  },
+
+  renderMap() {
+    const manual = this.s.useManualCity && this.s.lat != null;
+    const pts = this.worldCities.slice();
+    if (manual && !pts.some(p => p.name === this.s.cityName)) {
+      pts.push({ name: this.s.cityName, lat: this.s.lat, lon: this.s.lon });
+    }
+    WorldMap.render(this.$('worldmap'), pts,
+      manual ? this.s.cityName : '', p => this.pick(p.name, p.lat, p.lon));
   },
 
   $: id => document.getElementById(id),
@@ -35,6 +59,7 @@ const SUI = {
       b.addEventListener('click', () => {
         this.s.useManualCity = b.dataset.mode === 'manual';
         this.render();
+        this.renderMap();
         this.save();
         this.refreshWx();
       });
@@ -147,6 +172,7 @@ const SUI = {
     this.s.lat = lat;
     this.s.lon = lon;
     this.render();
+    this.renderMap();
     this.save();
     this.refreshWx();
   },
