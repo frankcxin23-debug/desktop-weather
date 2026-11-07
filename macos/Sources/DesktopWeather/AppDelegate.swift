@@ -287,9 +287,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
                               ["lat": lat, "lon": lon, "city": city ?? ""])
                 }
             case .unavailable:
-                // 让页面自己走 IP 定位兜底
-                for s in self.screens {
-                    s.web.evaluateJavaScript("DW.noShellLocation()") { _, _ in }
+                // 原生 IP 定位：绕过系统代理直连，避免代理出口节点把城市带偏
+                IPLocator.fetch { lat, lon, city, country in
+                    if let lat, let lon {
+                        for s in self.screens {
+                            self.call(s.web, "DW.setCoordsB64",
+                                      ["lat": lat, "lon": lon, "city": city ?? "", "country": country ?? ""])
+                        }
+                    } else {
+                        // 直连也失败，让页面自己走 IP 定位兜底
+                        for s in self.screens {
+                            s.web.evaluateJavaScript("DW.noShellLocation()") { _, _ in }
+                        }
+                    }
                 }
             }
         }
