@@ -8,13 +8,8 @@ on:
 
 jobs:
   macos:
-    name: macOS Build (${{ matrix.image }})
-    runs-on: ${{ matrix.image }}
-    continue-on-error: true
-    strategy:
-      fail-fast: false
-      matrix:
-        image: [macos-15, macos-14, macos-13]
+    name: macOS Build
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Swift Build
@@ -26,7 +21,7 @@ jobs:
           cd build && zip -qr DesktopWeather-macOS.zip 桌面天气.app
       - uses: actions/upload-artifact@v4
         with:
-          name: desktop-weather-macos-${{ matrix.image }}
+          name: desktop-weather-macos
           path: build/DesktopWeather-macOS.zip
 
   windows:
