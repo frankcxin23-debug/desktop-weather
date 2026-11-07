@@ -139,8 +139,8 @@ public sealed class AppContext : ApplicationContext
         {
             Text = "桌面天气设置",
             StartPosition = FormStartPosition.CenterScreen,
-            Size = new Size(480, 640),
-            MinimumSize = new Size(420, 520),
+            Size = new Size(520, 720),
+            MinimumSize = new Size(460, 560),
             BackColor = Color.FromArgb(22, 22, 24)
         };
         var web = new WebView2 { Dock = DockStyle.Fill };

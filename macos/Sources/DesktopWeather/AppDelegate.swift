@@ -186,8 +186,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
             return
         }
         let win = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 560),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 700),
+            styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -197,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate,
         win.titlebarAppearsTransparent = true
 
         let web = makeWebView("settings.html")
-        web.frame = NSRect(x: 0, y: 0, width: 460, height: 560)
+        web.frame = NSRect(x: 0, y: 0, width: 520, height: 700)
         web.autoresizingMask = [.width, .height]
         win.contentView = web
         settingsWindow = win

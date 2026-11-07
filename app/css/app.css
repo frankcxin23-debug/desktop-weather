@@ -19,17 +19,27 @@ body {
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   user-select: none;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
-.win { padding: 26px 28px 20px; display: flex; flex-direction: column; height: 100%; }
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.16);
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); background-clip: content-box; border: 3px solid transparent; }
+.win { padding: 30px 32px 24px; display: flex; flex-direction: column; min-height: 100%; }
 
-header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; }
-header .sub { margin-top: 4px; font-size: 12px; color: var(--text-3); }
+header h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; }
+header .sub { margin-top: 5px; font-size: 12.5px; color: var(--text-3); }
 
-section { margin-top: 22px; }
+section { margin-top: 28px; }
 .label {
   font-size: 11px; font-weight: 600; color: var(--text-2);
-  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px;
 }
 
 /* 分段控件 */
@@ -39,7 +49,7 @@ section { margin-top: 22px; }
 }
 .seg button {
   flex: 1; border: 0; background: transparent; color: var(--text-2);
-  font-size: 13px; padding: 7px 0; border-radius: 7px; cursor: pointer;
+  font-size: 13px; padding: 8px 0; border-radius: 7px; cursor: pointer;
   transition: all .18s ease; font-family: inherit;
 }
 .seg button.on {
@@ -48,11 +58,11 @@ section { margin-top: 22px; }
 }
 
 /* 搜索 */
-.manual { margin-top: 12px; }
+.manual { margin-top: 14px; }
 .search {
   display: flex; align-items: center; gap: 8px;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 9px 12px; color: var(--text-3);
+  border-radius: 10px; padding: 11px 14px; color: var(--text-3);
   transition: border-color .15s ease;
 }
 .search:focus-within { border-color: rgba(10,132,255,0.55); }
@@ -69,10 +79,10 @@ section { margin-top: 22px; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
 /* 搜索结果 */
-.results { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.results { margin-top: 10px; display: flex; flex-direction: column; gap: 3px; }
 .row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 12px; border-radius: 9px; cursor: pointer;
+  padding: 10px 14px; border-radius: 9px; cursor: pointer;
   transition: background .12s ease; border: 1px solid transparent;
 }
 .row:hover { background: var(--card-hover); }
@@ -83,10 +93,10 @@ section { margin-top: 22px; }
 .empty { padding: 14px 12px; color: var(--text-3); font-size: 12px; text-align: center; }
 
 /* 热门城市 */
-.chips-title { margin: 14px 0 8px; font-size: 11px; color: var(--text-3); }
-.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chips-title { margin: 16px 0 9px; font-size: 11px; color: var(--text-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
-  padding: 6px 13px; border-radius: 999px; font-size: 12px;
+  padding: 7px 14px; border-radius: 999px; font-size: 12px;
   background: var(--card); border: 1px solid var(--line);
   color: var(--text-2); cursor: pointer; transition: all .15s ease;
 }
@@ -94,9 +104,9 @@ section { margin-top: 22px; }
 .chip.sel { background: var(--accent-soft); border-color: rgba(10,132,255,0.4); color: #7cb8ff; }
 
 /* 状态行 */
-.status { margin-top: 12px; font-size: 12px; color: var(--text-2); min-height: 16px; }
+.status { margin-top: 14px; font-size: 12px; color: var(--text-2); min-height: 16px; }
 .status b { color: var(--text); font-weight: 500; }
-.wx { padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); }
+.wx { padding: 11px 13px; border-radius: 8px; background: rgba(255,255,255,0.06); }
 .wx-main { font-size: 13px; color: var(--text); }
 .wx-main b { font-weight: 600; }
 .wx-sub { margin-top: 3px; font-size: 11px; color: var(--text-3); letter-spacing: 0.2px; }
@@ -116,17 +126,17 @@ section { margin-top: 22px; }
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.07);
   background: rgba(255,255,255,0.04);
-  padding: 12px 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   transition: opacity 0.25s;
 }
 .music-card.off .m-row:not(:first-child),
 .music-card.off .m-cred,
 .music-card.off .hint { opacity: 0.35; }
-.m-row { display: flex; align-items: center; gap: 10px; }
-.m-row > span { flex: 0 0 60px; color: var(--text-2); font-size: 12px; }
+.m-row { display: flex; align-items: center; gap: 12px; }
+.m-row > span { flex: 0 0 64px; color: var(--text-2); font-size: 12px; }
 .m-row input[type="text"], .m-cred input {
   flex: 1;
   background: rgba(0,0,0,0.25);
@@ -138,7 +148,7 @@ section { margin-top: 22px; }
   outline: none;
 }
 .m-row input[type="text"]:focus, .m-cred input:focus { border-color: var(--accent); }
-.m-cred { display: flex; flex-direction: column; gap: 6px; margin: 2px 0; }
+.m-cred { display: flex; flex-direction: column; gap: 8px; margin: 2px 0; }
 .m-cred input { width: 100%; box-sizing: border-box; font-size: 12px; }
 .m-row input[type="range"] { flex: 1; }
 .m-seg { flex: 1; display: flex; }
@@ -148,7 +158,7 @@ section { margin-top: 22px; }
   border: none;
   color: var(--text-3);
   font-size: 11.5px;
-  padding: 5px 0;
+  padding: 7px 0;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
@@ -182,7 +192,7 @@ section { margin-top: 22px; }
 
 /* ---- 世界地图选城（世界时钟风格）---- */
 .worldmap {
-  margin: 10px 0 14px;
+  margin: 12px 0 16px;
   border-radius: 10px;
   overflow: hidden;
   background: linear-gradient(180deg, #131c28 0%, #0d141e 100%);
@@ -224,7 +234,7 @@ section { margin-top: 22px; }
 }
 .wm-city.sel .wm-label, .wm-city.hover .wm-label, .wm-city:hover .wm-label { opacity: 1; }
 
-hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0 0; }
 
 /* 强度滑块 */
 .slider-row { display: flex; align-items: center; gap: 10px; }
@@ -239,5 +249,5 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
 }
 .pct { width: 46px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
 
-footer { margin-top: auto; padding-top: 18px; font-size: 11px; color: var(--text-3); }
+footer { margin-top: auto; padding-top: 22px; font-size: 11px; color: var(--text-3); }
 .hidden { display: none !important; }
