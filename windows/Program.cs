@@ -115,8 +115,7 @@ public sealed class AppContext : ApplicationContext
             {
                 _desktopReady = true;
                 _ = CallPage(_desktopWeb, "DW.initB64", _settings.ToPageJson());
-                // Windows 壳不做系统级定位，让页面直接走 IP 定位
-                _ = CallPage(_desktopWeb, "DW.noShellLocation", null);
+                _ = LocateAsync();
             };
             _desktopWeb.CoreWebView2.Navigate(PageUri("index.html"));
         }
@@ -173,6 +172,27 @@ public sealed class AppContext : ApplicationContext
             web.CoreWebView2.Navigate(PageUri("settings.html"));
         }
         catch { /* 忽略 */ }
+    }
+
+    /// <summary>定位：原生直连 IP 定位（绕过系统代理）；失败再交给页面兜底。</summary>
+    private async Task LocateAsync()
+    {
+        var loc = await IPLocator.FetchAsync();
+        if (loc != null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                lat = loc.Lat,
+                lon = loc.Lon,
+                city = loc.City,
+                country = loc.Country
+            });
+            await CallPage(_desktopWeb, "DW.setCoordsB64", json);
+        }
+        else
+        {
+            await CallPage(_desktopWeb, "DW.noShellLocation", null);
+        }
     }
 
     private void HandleMusicMessage(string json)
